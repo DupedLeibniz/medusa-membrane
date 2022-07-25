@@ -1,0 +1,82 @@
+public class MedusaEncrypter {
+
+	public static String encrypt(String plaintText, String key) {
+
+		return null;
+
+	}
+
+	public static String decrypt(String plaintText, String key) {
+
+		String decryptedText = "";
+		char[] chars = plaintText.toCharArray();
+		byte[] bytes = key.getBytes();
+
+		for (int i = 0; i < chars.length; i++) {
+			chars[i] -= bytes[i];
+			decryptedText += chars[i];
+		}
+
+		return decryptedText;
+
+	}
+
+	public static String trimAndPush(String chain, int requestedLength) {
+
+		// Stack: The substring of the requested length
+		// Payload: The part that is not the substring, used to shift bytes
+		String stack = chain.substring(0, requestedLength);
+		String payload = chain.substring(stack.length(), chain.length());
+
+		byte[] stackBytes = stack.getBytes();
+		byte[] payloadBytes = payload.getBytes();
+
+		// This variable is used to determine how many iterations the for loop should
+		// give. It is initialized to the length of the stack if the stack and payload
+		// happen to be the same length, this way there is no need to assign the length
+		// again, since they are both equal
+		int counterReference = stack.length();
+		byte power = 0; // 0: equal, 1: stack, 2: payload
+
+		if (stack.length() > payload.length()) {
+			counterReference = stack.length();
+			power = 1;
+		}
+
+		if (stack.length() < payload.length()) {
+			counterReference = payload.length();
+			power = 2;
+		}
+
+		int pointer = 0;
+
+		if (power == 1 || power == 0) {
+
+			// Pointer for the payload, iterator for the stack
+			for (int i = 0; i < counterReference; i++) {
+				if (pointer == payload.length() - 1) {
+					pointer = 0;
+				} else {
+					pointer++;
+				}
+
+			}
+
+		} else {
+
+			// Pointer for the stack, iterator for the payload
+			for (int i = 0; i < counterReference; i++) {
+				if (pointer == stack.length() - 1) {
+					pointer = 0;
+				} else {
+					pointer++;
+				}
+
+			}
+
+		}
+
+		return null;
+	}
+
+}
