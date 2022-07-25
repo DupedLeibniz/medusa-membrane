@@ -29,7 +29,7 @@ public class MedusaEncrypter {
 		String payload = chain.substring(stack.length(), chain.length());
 
 		byte[] stackBytes = stack.getBytes();
-		byte[] payloadBytes = payload.getBytes();
+		final byte[] payloadBytes = payload.getBytes();
 
 		// This variable is used to determine how many iterations the for loop should
 		// give. It is initialized to the length of the stack if the stack and payload
@@ -54,29 +54,37 @@ public class MedusaEncrypter {
 
 			// Pointer for the payload, iterator for the stack
 			for (int i = 0; i < counterReference; i++) {
+
+				stackBytes[i] += payloadBytes[pointer];
+
 				if (pointer == payload.length() - 1) {
 					pointer = 0;
 				} else {
 					pointer++;
 				}
-
 			}
 
 		} else {
 
 			// Pointer for the stack, iterator for the payload
 			for (int i = 0; i < counterReference; i++) {
+
+				stackBytes[pointer] += payloadBytes[i];
+
 				if (pointer == stack.length() - 1) {
 					pointer = 0;
 				} else {
 					pointer++;
 				}
-
 			}
-
 		}
 
-		return null;
+		String newStack = "";
+		for (byte b : stackBytes) {
+			newStack += (char) b;
+		}
+
+		return newStack;
 	}
 
 }
