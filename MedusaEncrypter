@@ -1,27 +1,82 @@
+// IMPORTANT NOTES [!]
+// byte UTF-8 range encryption should be within the STRICT range of [33, 126] decimal, [21, 7e] hexadecimal
+// This is because those are the only chars that are not kinda weird, with unexpected behavior and overall, the only ones that use just 1 byte.
+// Check this link to see which chars you can use https://www.utf8-chartable.de/
+
 public class MedusaEncrypter {
 
-	public static String encrypt(String plaintText, String key) {
+	public static String encrypt(String plainText, String key) {
+
+		// keyFittings indicates how many times the key fits in the plainText.
+		// In case that keyFittings is less or greater than the plainText length, one
+		// part or the whole key will be trimmed and pushed to fit perfectly.
+		// trim is initialized to 0 for optimization
+		int keyFittings = (int) Math.floor((double) plainText.length() / (double) key.length());
+		byte[] trimmedBytes = null;
+		int trim = 0;
+
+		// textBytes will be modified and returned later.
+		// However, keyBytes won't be modified, so it can be final.
+		byte[] textBytes = plainText.getBytes();
+		final byte[] keyBytes = key.getBytes();
+
+		System.out.println("textBytes length " + textBytes.length);
+		System.out.println("keyBytes length " + keyBytes.length);
+
+		System.out.println("Key fits " + keyFittings + " times");
+
+		if (keyFittings * key.length() != plainText.length()) {
+
+			trim = plainText.length() % key.length();
+			System.out.println("Key needs a trim of " + trim);
+			trimmedBytes = trimAndPush(key, trim).getBytes();
+			System.out.println("trimmedBytes length " + trimmedBytes.length);
+
+			for (byte x : trimmedBytes) {
+				System.out.println(x + " byte means " + ((char) x));
+			}
+
+		}
+
+		System.out.println("");
+
+		int indexPointer = 0;
+
+		// This loops shifts the plainText bytes keyFittings times.
+		// In case that the key doesn't fit at all, this loop will be ignored.
+		for (int i = 0; i < keyFittings; i++) {
+
+			for (int j = 0; j < key.length(); j++) {
+
+				System.out.println("FIT: Shifting plainByte " + textBytes[indexPointer] + " that means " + ((char) textBytes[indexPointer])
+						+ " with the keyByte " + keyBytes[j] + " that means " + ((char) keyBytes[j]));
+				indexPointer++;
+
+			}
+
+		}
+
+		int indexP = 0;
+		// This loop will work just if the key needed to be trimmed and pushed.
+		for (int i = indexPointer; i < plainText.length(); i++) {
+
+			System.out.println("TRIM: Shifting plainByte " + textBytes[indexPointer] + " that means " + ((char) textBytes[indexPointer])
+					+ " with the keyByte " + trimmedBytes[indexP] + " that means " + ((char) trimmedBytes[indexP]));
+			indexPointer++;
+			indexP++;
+		}
 
 		return null;
 
 	}
 
 	public static String decrypt(String plaintText, String key) {
-
-		String decryptedText = "";
-		char[] chars = plaintText.toCharArray();
-		byte[] bytes = key.getBytes();
-
-		for (int i = 0; i < chars.length; i++) {
-			chars[i] -= bytes[i];
-			decryptedText += chars[i];
-		}
-
-		return decryptedText;
-
+		return null;
 	}
 
 	public static String trimAndPush(String chain, int requestedLength) {
+
+		System.out.println("Received the chain " + chain + " with a req length of " + requestedLength);
 
 		// Stack: The substring of the requested length
 		// Payload: The part that is not the substring, used to shift bytes
@@ -83,6 +138,8 @@ public class MedusaEncrypter {
 		for (byte b : stackBytes) {
 			newStack += (char) b;
 		}
+
+		System.out.println("Returning the new string: " + newStack + " with a length of " + newStack.length());
 
 		return newStack;
 	}
