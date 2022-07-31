@@ -2,6 +2,7 @@
 // byte UTF-8 range encryption should be within the STRICT range of [33, 126] decimal, [21, 7e] hexadecimal
 // This is because those are the only chars that are not kinda weird, with unexpected behavior and overall, the only ones that use just 1 byte.
 // Check this link to see which chars you can use https://www.utf8-chartable.de/
+// Do not use chars out of range on the plainText
 
 public class MedusaEncrypter {
 
@@ -74,12 +75,11 @@ public class MedusaEncrypter {
 		return null;
 	}
 
+	// requestedLength should be different to the chain length
 	public static String trimAndPush(String chain, int requestedLength) {
 
-		System.out.println("Received the chain " + chain + " with a req length of " + requestedLength);
-
 		// Stack: The substring of the requested length
-		// Payload: The part that is not the substring, used to shift bytes
+		// Payload: The part that is not the stack
 		String stack = chain.substring(0, requestedLength);
 		String payload = chain.substring(stack.length(), chain.length());
 
@@ -104,13 +104,21 @@ public class MedusaEncrypter {
 		}
 
 		int pointer = 0;
-
 		if (power == 1 || power == 0) {
 
 			// Pointer for the payload, iterator for the stack
 			for (int i = 0; i < counterReference; i++) {
 
-				stackBytes[i] += payloadBytes[pointer];
+				if (stackBytes[i] + payloadBytes[pointer] > 126) {
+					stackBytes[i] += (payloadBytes[pointer] - 126);
+
+					if (stackBytes[i] < 33) {
+						stackBytes[i] += 32;
+					}
+
+				} else {
+					stackBytes[i] += payloadBytes[pointer];
+				}
 
 				if (pointer == payload.length() - 1) {
 					pointer = 0;
@@ -124,7 +132,16 @@ public class MedusaEncrypter {
 			// Pointer for the stack, iterator for the payload
 			for (int i = 0; i < counterReference; i++) {
 
-				stackBytes[pointer] += payloadBytes[i];
+				if (stackBytes[pointer] + payloadBytes[i] > 126) {
+					stackBytes[pointer] += (payloadBytes[i] - 126);
+
+					if (stackBytes[pointer] < 33) {
+						stackBytes[pointer] += 32;
+					}
+
+				} else {
+					stackBytes[pointer] += payloadBytes[i];
+				}
 
 				if (pointer == stack.length() - 1) {
 					pointer = 0;
@@ -138,8 +155,6 @@ public class MedusaEncrypter {
 		for (byte b : stackBytes) {
 			newStack += (char) b;
 		}
-
-		System.out.println("Returning the new string: " + newStack + " with a length of " + newStack.length());
 
 		return newStack;
 	}
