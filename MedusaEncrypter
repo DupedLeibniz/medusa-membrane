@@ -1,87 +1,146 @@
+import java.nio.charset.StandardCharsets;
+
 // IMPORTANT NOTES [!]
-// byte UTF-8 range encryption should be within the STRICT range of [33, 126] decimal, [21, 7e] hexadecimal
+// byte UTF-8 range encryption should be within the STRICT range of [32, 126]
 // This is because those are the only chars that are not kinda weird, with unexpected behavior and overall, the only ones that use just 1 byte.
 // Check this link to see which chars you can use https://www.utf8-chartable.de/
 // Do not use chars out of range on the plainText
 
 public class MedusaEncrypter {
 
-	public static String encrypt(String plainText, String key) {
+	public static String encrypt(String plain, String key) {
 
-		// keyFittings indicates how many times the key fits in the plainText.
-		// In case that keyFittings is less or greater than the plainText length, one
-		// part or the whole key will be trimmed and pushed to fit perfectly.
-		// trim is initialized to 0 for optimization
-		int keyFittings = (int) Math.floor((double) plainText.length() / (double) key.length());
-		byte[] trimmedBytes = null;
-		int trim = 0;
+		String load = forgeLoad(plain, key);
+		byte[] bytes = new byte[plain.length()];
 
-		// textBytes will be modified and returned later.
-		// However, keyBytes won't be modified, so it can be final.
-		byte[] textBytes = plainText.getBytes();
-		final byte[] keyBytes = key.getBytes();
+		for (int i = 0; i < plain.length(); i++) {
+			bytes[i] = shiftParallelBytes(plain.charAt(i), load.charAt(i), true);
+		}
 
-		System.out.println("textBytes length " + textBytes.length);
-		System.out.println("keyBytes length " + keyBytes.length);
+		String encrypted = "";
 
-		System.out.println("Key fits " + keyFittings + " times");
+		for (byte b : bytes) {
+			encrypted += (char) b;
+		}
 
-		if (keyFittings * key.length() != plainText.length()) {
+		return encrypted;
+	}
 
-			trim = plainText.length() % key.length();
-			System.out.println("Key needs a trim of " + trim);
-			trimmedBytes = trimAndPush(key, trim).getBytes();
-			System.out.println("trimmedBytes length " + trimmedBytes.length);
+	public static String decrypt(String encrypted, String key) {
 
-			for (byte x : trimmedBytes) {
-				System.out.println(x + " byte means " + ((char) x));
+		String load = forgeLoad(encrypted, key);
+		byte[] bytes = new byte[encrypted.length()];
+
+		for (int i = 0; i < encrypted.length(); i++) {
+			bytes[i] = shiftParallelBytes(encrypted.charAt(i), load.charAt(i), false);
+		}
+
+		String decrypted = "";
+
+		for (byte b : bytes) {
+			decrypted += (char) b;
+		}
+
+		return decrypted;
+	}
+
+	public static String forgeLoad(String text, String load) {
+
+		int loadFittings = (int) Math.floor((double) text.length() / (double) load.length());
+		int loadSpare = text.length() % load.length();
+		String forgedLoad = "";
+
+		// Adds the fitting loads
+		// If the load does not fit at all, this loop is ignored
+		for (int i = 0; i < loadFittings; i++) {
+			forgedLoad += load;
+		}
+
+		// load needs to be trimmed and pushed once
+		if (loadSpare != 0) {
+			forgedLoad += trimAndPush(load, loadSpare);
+		}
+
+		return forgedLoad;
+
+	}
+
+	// Jails the bytes between the range [32, 126];
+	public static byte shiftParallelBytes(char char1, char char2, boolean operation) {
+
+		final byte infLim = 32;
+		final byte supLim = 126;
+
+		final byte max = (supLim + 1) - infLim;
+
+		final byte start = ("" + char1).getBytes()[0];
+		byte steps = ("" + char2).getBytes()[0];
+
+		byte end = -1;
+
+		// +
+		if (operation == true) {
+
+			if (start + steps > supLim) {
+				byte spare = (byte) (supLim - start);
+				steps -= spare;
+
+				boolean repeat = true;
+				while (repeat) {
+					if ((infLim - 1) + steps > supLim) {
+						steps -= max;
+					} else {
+						repeat = false;
+					}
+				}
+
+				end = (byte) ((infLim - 1) + steps);
+
+			} else {
+				end = (byte) (start + steps);
 			}
 
 		}
 
-		System.out.println("");
+		// -
+		if (operation == false) {
 
-		int indexPointer = 0;
+			if (start - steps < infLim) {
 
-		// This loops shifts the plainText bytes keyFittings times.
-		// In case that the key doesn't fit at all, this loop will be ignored.
-		for (int i = 0; i < keyFittings; i++) {
+				byte spare = (byte) (start - infLim);
+				steps -= spare;
 
-			for (int j = 0; j < key.length(); j++) {
+				boolean repeat = true;
+				while (repeat) {
+					if ((supLim + 1) - steps < infLim) {
+						steps -= max;
+					} else {
+						repeat = false;
+					}
+				}
 
-				System.out.println("FIT: Shifting plainByte " + textBytes[indexPointer] + " that means " + ((char) textBytes[indexPointer])
-						+ " with the keyByte " + keyBytes[j] + " that means " + ((char) keyBytes[j]));
-				indexPointer++;
+				end = (byte) ((supLim + 1) - steps);
 
+			} else {
+				end = (byte) (start - steps);
 			}
 
 		}
 
-		int indexP = 0;
-		// This loop will work just if the key needed to be trimmed and pushed.
-		for (int i = indexPointer; i < plainText.length(); i++) {
-
-			System.out.println("TRIM: Shifting plainByte " + textBytes[indexPointer] + " that means " + ((char) textBytes[indexPointer])
-					+ " with the keyByte " + trimmedBytes[indexP] + " that means " + ((char) trimmedBytes[indexP]));
-			indexPointer++;
-			indexP++;
-		}
-
-		return null;
+		return end;
 
 	}
 
-	public static String decrypt(String plaintText, String key) {
-		return null;
+	public static String buildBytes(byte[] bytes) {
+		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
-	// requestedLength should be different to the chain length
-	public static String trimAndPush(String chain, int requestedLength) {
+	public static String trimAndPush(String text, int requestedLength) {
 
 		// Stack: The substring of the requested length
 		// Payload: The part that is not the stack
-		String stack = chain.substring(0, requestedLength);
-		String payload = chain.substring(stack.length(), chain.length());
+		String stack = text.substring(0, requestedLength);
+		String payload = text.substring(stack.length(), text.length());
 
 		byte[] stackBytes = stack.getBytes();
 		final byte[] payloadBytes = payload.getBytes();
@@ -109,16 +168,7 @@ public class MedusaEncrypter {
 			// Pointer for the payload, iterator for the stack
 			for (int i = 0; i < counterReference; i++) {
 
-				if (stackBytes[i] + payloadBytes[pointer] > 126) {
-					stackBytes[i] += (payloadBytes[pointer] - 126);
-
-					if (stackBytes[i] < 33) {
-						stackBytes[i] += 32;
-					}
-
-				} else {
-					stackBytes[i] += payloadBytes[pointer];
-				}
+				stackBytes[i] = shiftParallelBytes((char) stackBytes[i], (char) payloadBytes[pointer], true);
 
 				if (pointer == payload.length() - 1) {
 					pointer = 0;
@@ -127,21 +177,14 @@ public class MedusaEncrypter {
 				}
 			}
 
-		} else {
+		} else
+
+		{
 
 			// Pointer for the stack, iterator for the payload
 			for (int i = 0; i < counterReference; i++) {
 
-				if (stackBytes[pointer] + payloadBytes[i] > 126) {
-					stackBytes[pointer] += (payloadBytes[i] - 126);
-
-					if (stackBytes[pointer] < 33) {
-						stackBytes[pointer] += 32;
-					}
-
-				} else {
-					stackBytes[pointer] += payloadBytes[i];
-				}
+				stackBytes[pointer] = shiftParallelBytes((char) stackBytes[pointer], (char) payloadBytes[i], true);
 
 				if (pointer == stack.length() - 1) {
 					pointer = 0;
