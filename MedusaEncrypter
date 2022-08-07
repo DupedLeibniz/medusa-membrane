@@ -32,7 +32,7 @@ public class MedusaEncrypter {
 	public static String decrypt(String encrypted, String key) throws BannedCharException {
 
 		if (hasBannedChars(encrypted)) {
-			throw new BannedCharException("One or more banned chars in the plain text");
+			throw new BannedCharException("One or more banned chars in the encrypted text");
 		}
 
 		if (hasBannedChars(key)) {
