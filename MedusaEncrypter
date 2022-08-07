@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 // This is because those are the only chars that are not kind of weird, with unexpected behavior and overall, the only ones that use just 1 byte.
 // Check this link to see which chars you can use: https://www.utf8-chartable.de/
 
-public class MedusaEncrypter { 
+public class MedusaEncrypter {
 
 	public static String encrypt(String plain, String key) throws BannedCharException {
 
@@ -24,7 +24,7 @@ public class MedusaEncrypter {
 
 		for (int i = 0; i < plain.length(); i++) {
 			bytes[i] = shiftParallelBytes(plain.charAt(i), load.charAt(i), true);
-		}|
+		}
 
 		return buildBytes(bytes);
 	}
