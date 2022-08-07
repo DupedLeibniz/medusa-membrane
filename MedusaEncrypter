@@ -1,32 +1,43 @@
+package mainpackage;
+
 import java.nio.charset.StandardCharsets;
 
 // IMPORTANT NOTES [!]
 // byte UTF-8 range encryption should be within the STRICT range of [32, 126]
-// This is because those are the only chars that are not kinda weird, with unexpected behavior and overall, the only ones that use just 1 byte.
-// Check this link to see which chars you can use https://www.utf8-chartable.de/
-// Do not use chars out of range on the plainText
+// This is because those are the only chars that are not kind of weird, with unexpected behavior and overall, the only ones that use just 1 byte.
+// Check this link to see which chars you can use: https://www.utf8-chartable.de/
 
-public class MedusaEncrypter {
+public class MedusaEncrypter { 
 
-	public static String encrypt(String plain, String key) {
+	public static String encrypt(String plain, String key) throws BannedCharException {
+
+		if (hasBannedChars(plain)) {
+			throw new BannedCharException("One or more banned chars in the plain text");
+		}
+
+		if (hasBannedChars(key)) {
+			throw new BannedCharException("One or more banned chars in the key");
+		}
 
 		String load = forgeLoad(plain, key);
 		byte[] bytes = new byte[plain.length()];
 
 		for (int i = 0; i < plain.length(); i++) {
 			bytes[i] = shiftParallelBytes(plain.charAt(i), load.charAt(i), true);
-		}
+		}|
 
-		String encrypted = "";
-
-		for (byte b : bytes) {
-			encrypted += (char) b;
-		}
-
-		return encrypted;
+		return buildBytes(bytes);
 	}
 
-	public static String decrypt(String encrypted, String key) {
+	public static String decrypt(String encrypted, String key) throws BannedCharException {
+
+		if (hasBannedChars(encrypted)) {
+			throw new BannedCharException("One or more banned chars in the plain text");
+		}
+
+		if (hasBannedChars(key)) {
+			throw new BannedCharException("One or more banned chars in the key");
+		}
 
 		String load = forgeLoad(encrypted, key);
 		byte[] bytes = new byte[encrypted.length()];
@@ -44,7 +55,20 @@ public class MedusaEncrypter {
 		return decrypted;
 	}
 
-	public static String forgeLoad(String text, String load) {
+	private static boolean hasBannedChars(String s) {
+
+		byte[] bytes = s.getBytes();
+
+		for (byte b : bytes) {
+			if (b < 32 || b > 126) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static String forgeLoad(String text, String load) {
 
 		int loadFittings = (int) Math.floor((double) text.length() / (double) load.length());
 		int loadSpare = text.length() % load.length();
@@ -66,7 +90,7 @@ public class MedusaEncrypter {
 	}
 
 	// Jails the bytes between the range [32, 126];
-	public static byte shiftParallelBytes(char char1, char char2, boolean operation) {
+	private static byte shiftParallelBytes(char char1, char char2, boolean operation) {
 
 		final byte infLim = 32;
 		final byte supLim = 126;
@@ -131,11 +155,11 @@ public class MedusaEncrypter {
 
 	}
 
-	public static String buildBytes(byte[] bytes) {
+	private static String buildBytes(byte[] bytes) {
 		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
-	public static String trimAndPush(String text, int requestedLength) {
+	private static String trimAndPush(String text, int requestedLength) {
 
 		// Stack: The substring of the requested length
 		// Payload: The part that is not the stack
@@ -194,12 +218,15 @@ public class MedusaEncrypter {
 			}
 		}
 
-		String newStack = "";
-		for (byte b : stackBytes) {
-			newStack += (char) b;
+		return buildBytes(stackBytes);
+	}
+
+	public static class BannedCharException extends Exception {
+
+		public BannedCharException(String errorMessage) {
+			super(errorMessage);
 		}
 
-		return newStack;
 	}
 
 }
